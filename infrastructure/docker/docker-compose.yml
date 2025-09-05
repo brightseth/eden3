@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: eden3-postgres
+    environment:
+      POSTGRES_DB: eden3_dev
+      POSTGRES_USER: eden3
+      POSTGRES_PASSWORD: eden3_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - eden3-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: eden3-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - eden3-network
+
+  # API Service
+  api:
+    build:
+      context: ../../
+      dockerfile: apps/api/Dockerfile
+    container_name: eden3-api
+    environment:
+      DATABASE_URL: postgresql://eden3:eden3_password@postgres:5432/eden3_dev
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: development
+      API_PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../../apps/api:/app/apps/api
+      - ../../packages:/app/packages
+      - /app/node_modules
+    networks:
+      - eden3-network
+    profiles:
+      - full
+
+  # Academy Frontend
+  academy:
+    build:
+      context: ../../
+      dockerfile: apps/academy/Dockerfile
+    container_name: eden3-academy
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    volumes:
+      - ../../apps/academy:/app/apps/academy
+      - ../../packages:/app/packages
+      - /app/node_modules
+    networks:
+      - eden3-network
+    profiles:
+      - full
+
+  # Development Database Only
+  postgres-dev:
+    extends: postgres
+    container_name: eden3-postgres-dev
+    profiles:
+      - dev
+
+  # Development Redis Only  
+  redis-dev:
+    extends: redis
+    container_name: eden3-redis-dev
+    profiles:
+      - dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  eden3-network:
+    driver: bridge

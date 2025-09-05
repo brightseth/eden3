@@ -1,0 +1,45 @@
+{
+  "name": "@eden3/academy",
+  "version": "0.1.0",
+  "description": "EDEN3 Academy - Next.js 14 App Router Frontend",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@eden3/core": "workspace:*",
+    "@eden3/sdk": "workspace:*",
+    "next-auth": "^4.22.0",
+    "tailwindcss": "^3.3.0",
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.24",
+    "lucide-react": "^0.263.0",
+    "clsx": "^2.0.0",
+    "class-variance-authority": "^0.7.0",
+    "tailwind-merge": "^1.14.0",
+    "@radix-ui/react-slot": "^1.0.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@next/eslint-config-next": "^14.0.0",
+    "eslint": "^8.42.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "catalog:",
+    "jest": "^29.5.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "jest-environment-jsdom": "^29.5.0"
+  }
+}

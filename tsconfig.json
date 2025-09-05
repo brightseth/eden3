@@ -1,0 +1,83 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@eden3/core": ["./packages/@eden3/core/src"],
+      "@eden3/memory": ["./packages/@eden3/memory/src"],
+      "@eden3/knowledge": ["./packages/@eden3/knowledge/src"],
+      "@eden3/personality": ["./packages/@eden3/personality/src"],
+      "@eden3/contracts": ["./packages/@eden3/contracts/src"],
+      "@eden3/sdk": ["./packages/@eden3/sdk/src"],
+      "@eden3/adapter-base": ["./adapters/base/src"],
+      "@eden3/adapter-claude": ["./adapters/claude/src"],
+      "@eden3/adapter-eden-legacy": ["./adapters/eden-legacy/src"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".next"
+  ],
+  "references": [
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./apps/academy"
+    },
+    {
+      "path": "./packages/@eden3/core"
+    },
+    {
+      "path": "./packages/@eden3/memory"
+    },
+    {
+      "path": "./packages/@eden3/knowledge"
+    },
+    {
+      "path": "./packages/@eden3/personality"
+    },
+    {
+      "path": "./packages/@eden3/contracts"
+    },
+    {
+      "path": "./packages/@eden3/sdk"
+    },
+    {
+      "path": "./adapters/base"
+    },
+    {
+      "path": "./adapters/claude"
+    },
+    {
+      "path": "./adapters/eden-legacy"
+    }
+  ]
+}
