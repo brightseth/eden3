@@ -3,7 +3,7 @@
 # Update Vercel with your Railway API URL
 # Replace YOUR-RAILWAY-URL with your actual Railway URL
 
-RAILWAY_API_URL="https://eden3-production.up.railway.app"  # Update this with your actual URL
+RAILWAY_API_URL="https://eden3-production.up.railway.app"
 
 echo "Updating Vercel with Railway API URL: $RAILWAY_API_URL"
 
