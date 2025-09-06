@@ -26,6 +26,7 @@ async function bootstrap() {
       xfp: req.headers['x-forwarded-proto'],
       xfh: req.headers['x-forwarded-host'],
       host: req.headers['host'],
+      timestamp: new Date().toISOString(), // Railway edge fix trigger
     });
   });
 
