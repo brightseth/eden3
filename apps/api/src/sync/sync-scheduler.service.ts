@@ -15,7 +15,8 @@ export class SyncSchedulerService implements OnModuleInit, OnModuleDestroy {
   private readonly config: SyncScheduleConfig = {
     // Sync every 30 minutes
     edenLegacyInterval: process.env.EDEN_SYNC_CRON || '0 */30 * * * *',
-    enabled: process.env.EDEN_SYNC_ENABLED !== 'false',
+    // Disabled by default in production, enabled by default in development
+    enabled: process.env.EDEN_SYNC_ENABLED === 'true' || (process.env.NODE_ENV !== 'production' && process.env.EDEN_SYNC_ENABLED !== 'false'),
   };
 
   constructor(
