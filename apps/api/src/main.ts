@@ -19,10 +19,19 @@ async function bootstrap() {
   // Dead-simple probes first - NO dependencies, NO middleware
   app.getHttpAdapter().get('/health', (_req, res) => res.status(200).json({ ok: true }));
   app.getHttpAdapter().get('/', (_req, res) => res.status(200).send('ok'));
+  
+  // Debug route to validate Railway proxy headers
+  app.getHttpAdapter().get('/_debug/headers', (req, res) => {
+    res.status(200).json({
+      xfp: req.headers['x-forwarded-proto'],
+      xfh: req.headers['x-forwarded-host'],
+      host: req.headers['host'],
+    });
+  });
 
-  // Skip redirects on health endpoints
+  // Skip redirects on health and debug endpoints
   app.use((req, res, next) => {
-    if (req.path === '/' || req.path === '/health') return next();
+    if (req.path === '/' || req.path === '/health' || req.path === '/_debug/headers') return next();
     const proto = req.headers['x-forwarded-proto'];
     if (process.env.FORCE_HTTPS === '1' && proto && proto !== 'https') {
       return res.redirect(308, `https://${req.headers.host}${req.url}`);
