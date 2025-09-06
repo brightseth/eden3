@@ -137,7 +137,7 @@ async function bootstrap() {
     exclude: ['/health', '/docs'],
   });
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || process.env.API_PORT || 3001;
   await app.listen(port);
   
   logger.log(`🚀 EDEN3 API running on port ${port}`);
