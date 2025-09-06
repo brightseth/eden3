@@ -42,7 +42,7 @@ import { getRateLimitingConfig } from './config/rate-limiting.config';
     // Feature modules
     AgentsModule,
     WebhookModule,
-    SchedulerModule,
+    // SchedulerModule, // Temporarily disabled for deployment
     HealthModule,
   ],
 })
