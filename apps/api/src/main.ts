@@ -6,22 +6,40 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
-  });
+  const port = Number(process.env.PORT ?? 3001);
+  const host = '0.0.0.0';
+
+  const app = await NestFactory.create(AppModule); // HTTP only in prod
 
   const logger = new Logger('Bootstrap');
 
-  // Security headers
+  // Trust Railway's proxy for proper x-forwarded-* header handling
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  // Dead-simple probes first - NO dependencies, NO middleware
+  app.getHttpAdapter().get('/health', (_req, res) => res.status(200).json({ ok: true }));
+  app.getHttpAdapter().get('/', (_req, res) => res.status(200).send('ok'));
+
+  // Skip redirects on health endpoints
+  app.use((req, res, next) => {
+    if (req.path === '/' || req.path === '/health') return next();
+    const proto = req.headers['x-forwarded-proto'];
+    if (process.env.FORCE_HTTPS === '1' && proto && proto !== 'https') {
+      return res.redirect(308, `https://${req.headers.host}${req.url}`);
+    }
+    next();
+  });
+
+  // Security headers (Railway-safe)
   app.use(helmet({
-    crossOriginEmbedderPolicy: false, // Required for some API functionality
+    crossOriginEmbedderPolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
         objectSrc: ["'none'"],
-        upgradeInsecureRequests: [],
+        // Remove upgradeInsecureRequests - Railway handles TLS termination
       },
     },
   }));
@@ -132,22 +150,14 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  // Add simple root and health routes first (no dependencies)
-  app.getHttpAdapter().get('/', (req, res) => res.status(200).send('ok'));
-  app.getHttpAdapter().get('/health', (req, res) => res.status(200).json({ ok: true }));
-
-  // Global prefix for API routes
+  // Global prefix for API routes (health routes already defined above)
   app.setGlobalPrefix('api/v1', {
     exclude: ['/health', '/docs', '/'],
   });
 
-  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
-  const host = '0.0.0.0';
-  
-  console.log(`[api] PORT=${process.env.PORT}`);
-  
   await app.listen(port, host);
   
+  console.log(`[api] listening on http://${host}:${port} (PORT=${process.env.PORT})`);
   logger.log(`🚀 EDEN3 API running on http://${host}:${port}`);
   logger.log(`📚 Swagger docs: http://${host}:${port}/docs`);
   logger.log(`🏥 Health check: http://${host}:${port}/health`);
