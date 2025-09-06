@@ -138,7 +138,7 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || process.env.API_PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   
   logger.log(`🚀 EDEN3 API running on port ${port}`);
   logger.log(`📚 Swagger docs: http://localhost:${port}/docs`);
