@@ -5,8 +5,8 @@ services:
     plan: starter
     autoDeploy: true
     region: frankfurt
-    buildCommand: "npm ci && npm run build"
-    startCommand: "node dist/src/main.js"
+    buildCommand: "npm ci && npx turbo build --filter=api"
+    startCommand: "node apps/api/dist/src/main.js"
     healthCheckPath: "/health"
     # Render sets PORT for you. Do NOT hardcode.
     envVars:
