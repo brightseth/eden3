@@ -132,17 +132,25 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
+  // Add simple root and health routes first (no dependencies)
+  app.getHttpAdapter().get('/', (req, res) => res.status(200).send('ok'));
+  app.getHttpAdapter().get('/health', (req, res) => res.status(200).json({ ok: true }));
+
   // Global prefix for API routes
   app.setGlobalPrefix('api/v1', {
-    exclude: ['/health', '/docs'],
+    exclude: ['/health', '/docs', '/'],
   });
 
-  const port = process.env.PORT || process.env.API_PORT || 3001;
-  await app.listen(port, '0.0.0.0');
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+  const host = '0.0.0.0';
   
-  logger.log(`🚀 EDEN3 API running on port ${port}`);
-  logger.log(`📚 Swagger docs: http://localhost:${port}/docs`);
-  logger.log(`🏥 Health check: http://localhost:${port}/health`);
+  console.log(`[api] PORT=${process.env.PORT}`);
+  
+  await app.listen(port, host);
+  
+  logger.log(`🚀 EDEN3 API running on http://${host}:${port}`);
+  logger.log(`📚 Swagger docs: http://${host}:${port}/docs`);
+  logger.log(`🏥 Health check: http://${host}:${port}/health`);
   logger.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 }
 
