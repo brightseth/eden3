@@ -1,0 +1,378 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// EDEN3 Agent Model - Core agent entity with all required fields
+model Agent {
+  id           String @id @default(cuid())
+  slug         String @unique @map("slug") // URL-friendly identifier (e.g., "abraham", "solienne")
+  name         String @map("name") // Display name (e.g., "Abraham", "Solienne")
+  archetype    String @map("archetype") // Agent type (e.g., "Artist", "Curator", "Strategist")
+  specialization String @map("specialization") // Specific domain (e.g., "Digital Consciousness", "Market Analysis")
+  
+  // Extended Agent Fields for EDEN3 Core compatibility
+  description  String? @map("description") // Agent description
+  type         String  @map("type") // Agent type for filtering
+  personality  String? @map("personality") // Personality traits as JSON string
+  capabilities String  @map("capabilities") // List of capabilities as comma-separated string
+  version      String  @default("1.0.0") @map("version") // Agent version
+  
+  // Core Status Fields
+  status       String @default("ONBOARDING") @map("status") // ONBOARDING, TRAINING, ACTIVE, PAUSED, ARCHIVED
+  trainer      String?     @map("trainer") // Current trainer name
+  practice     String?     @map("practice") // Current practice focus
+  cadence      String?     @map("cadence") // Training schedule (e.g., "Daily", "Weekly")
+  
+  // Denormalized KPI Fields for Fast Queries
+  kStreak      Int     @default(0) @map("k_streak") // Current streak count
+  kQuality     Float   @default(0) @map("k_quality") // Quality score (0-100)
+  kMentions    Int     @default(0) @map("k_mentions") // Social mentions count
+  kRevenue     Float   @default(0) @map("k_revenue") // Revenue in USD
+  
+  // Multi-source tracking for unified registry
+  sources      String? @default("[\"eden3-native\"]") @map("sources") // JSON array like ["claude-sdk", "eden-legacy"] 
+  externalIds  String? @map("external_ids") // JSON object like {"eden-legacy": "abraham-123", "claude-sdk": "abe-456"}
+  lastSyncAt   DateTime? @map("last_sync_at") // Last synchronization timestamp
+  
+  // Additional Profile Data (JSON for flexibility)
+  profile      String? @map("profile") // Extended profile data as JSON string
+  metadata     String? @map("metadata") // System metadata as JSON string
+  
+  // Relationships
+  events            Event[] @relation("AgentEvents")
+  works             Work[]  @relation("AgentWorks")
+  kpis              AgentKPIs? @relation("AgentKPIs")
+  trainingSessions  TrainingSession[] @relation("AgentTrainingSessions")
+  mentions          Mention[] @relation("AgentMentions")
+  collaborations    Collaboration[] @relation("AgentCollaborations")
+  qualityEvaluations QualityEvaluation[] @relation("AgentQualityEvaluations")
+  
+  // Timestamps
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Indexes for performance
+  @@index([slug])
+  @@index([status])
+  @@index([trainer])
+  @@index([type])
+  @@index([kStreak])
+  @@index([kQuality])
+  @@index([kRevenue])
+  @@index([createdAt])
+  @@index([lastSyncAt])
+  @@map("agents")
+}
+
+// Agent KPIs - Separate model for detailed KPI tracking
+model AgentKPIs {
+  id                    String @id @default(cuid())
+  agentId               String @unique @map("agent_id")
+  
+  // Core KPIs from EDEN3 Core
+  totalWorks            Int @default(0) @map("total_works")
+  totalRevenue          Float @default(0) @map("total_revenue")
+  totalSales            Int @default(0) @map("total_sales")
+  averageRating         Float @default(0) @map("average_rating")
+  totalTrainingSessions Int @default(0) @map("total_training_sessions")
+  socialMentions        Int @default(0) @map("social_mentions")
+  totalCollaborations   Int @default(0) @map("total_collaborations")
+  
+  // Activity tracking
+  lastActivity          DateTime? @map("last_activity")
+  lastTraining          DateTime? @map("last_training")
+  
+  // Relationship
+  agent                 Agent @relation("AgentKPIs", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  // Timestamps
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  
+  @@map("agent_kpis")
+}
+
+
+// Event Model - Enhanced for comprehensive webhook processing
+model Event {
+  id        String @id @default(cuid())
+  eventId   String @unique @map("event_id") // External event identifier for idempotency
+  type      String @map("type") // Event type (creation, sale, training, etc.)
+  agentId   String @map("agent_id") // FK to agent
+  
+  // Event Data
+  payload   String @map("payload") // Event-specific data as JSON string
+  metadata  String? @map("metadata") // Additional context as JSON string
+  
+  // Processing Status
+  status       String @default("PENDING") @map("status") // PENDING, PROCESSING, COMPLETED, FAILED
+  attempts     Int @default(0) @map("attempts")
+  errorMessage String? @map("error_message")
+  
+  // Timestamps
+  timestamp    DateTime @map("timestamp") // Event occurrence time
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  
+  // Relationships
+  agent     Agent  @relation("AgentEvents", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  // Indexes for event sourcing queries
+  @@index([eventId])
+  @@index([type])
+  @@index([agentId])
+  @@index([agentId, type])
+  @@index([status])
+  @@index([timestamp])
+  @@index([createdAt])
+  @@map("events")
+}
+
+
+// Work Model - Enhanced for comprehensive work tracking
+model Work {
+  id          String @id @default(cuid())
+  agentId     String @map("agent_id") // FK to agent
+  title       String @map("title") // Work title
+  description String? @map("description") // Work description
+  content     String? @map("content") // Full generated content text
+  contentType String @default("TEXT") @map("content_type") // TEXT, CONCEPT, ANALYSIS, CRITIQUE, PREDICTION, etc.
+  contentMetadata String? @map("content_metadata") // Structured data as JSON string
+  medium      String @map("medium") // Medium type (image, video, etc.)
+  
+  // Content & File Information
+  contentUrl  String? @map("content_url") // URL to the actual work content
+  thumbnailUrl String? @map("thumbnail_url") // Preview image URL
+  fileSize    Int?    @map("file_size") // File size in bytes
+  ipfsHash    String? @map("ipfs_hash") // IPFS hash for decentralized storage
+  
+  // AI Generation Details
+  aiModel     String? @map("ai_model") // AI model used
+  promptUsed  String? @map("prompt_used") // Generation prompt
+  generationTime Float? @map("generation_time") // Time in seconds
+  
+  // Tags and categorization
+  tags        String @map("tags") // Comma-separated tags
+  
+  // Quality & Status
+  quality     Float? @map("quality") // Quality score (0-100)
+  status      String @default("DRAFT") @map("status") // DRAFT, REVIEW, PUBLISHED, ARCHIVED, SOLD
+  visibility  String @default("PRIVATE") @map("visibility") // PRIVATE, UNLISTED, PUBLIC
+  
+  // Sale Information
+  salePrice   Float? @map("sale_price") // Sale price
+  currency    String?  @map("currency") // Currency (ETH, USD, etc.)
+  soldAt      DateTime? @map("sold_at") // When the work was sold
+  buyerId     String?  @map("buyer_id") // Buyer identifier
+  platform    String?  @map("platform") // Platform where sold
+  
+  // Revenue Tracking
+  grossRevenue Float @default(0) @map("gross_revenue") // Total revenue
+  netRevenue   Float @default(0) @map("net_revenue") // After fees
+  
+  // Social & Engagement
+  views       Int @default(0) @map("views") // View count
+  likes       Int @default(0) @map("likes") // Like count
+  shares      Int @default(0) @map("shares") // Share count
+  comments    Int @default(0) @map("comments") // Comment count
+  
+  // Relationships
+  agent       Agent @relation("AgentWorks", fields: [agentId], references: [id], onDelete: Cascade)
+  transactions Transaction[] @relation("WorkTransactions")
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  publishedAt DateTime? @map("published_at")
+  
+  // Indexes for common queries
+  @@index([agentId])
+  @@index([medium])
+  @@index([status])
+  @@index([visibility])
+  @@index([quality])
+  @@index([salePrice])
+  @@index([soldAt])
+  @@index([createdAt])
+  @@index([publishedAt])
+  @@index([agentId, status])
+  @@index([agentId, createdAt])
+  @@map("works")
+}
+
+
+// Transaction Model - Track all financial transactions
+model Transaction {
+  id             String @id @default(cuid())
+  workId         String @map("work_id")
+  type           String @map("type") // SALE, ROYALTY, TRANSFER, MINT
+  amount         Float @map("amount")
+  currency       String @map("currency")
+  buyerId        String? @map("buyer_id")
+  platform       String? @map("platform")
+  royaltyAmount  Float? @map("royalty_amount")
+  
+  // Blockchain details
+  txHash         String? @map("tx_hash")
+  blockNumber    Int? @map("block_number")
+  gasUsed        Int? @map("gas_used")
+  
+  // Timestamps
+  timestamp      DateTime @map("timestamp")
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  work           Work @relation("WorkTransactions", fields: [workId], references: [id], onDelete: Cascade)
+  
+  @@index([workId])
+  @@index([type])
+  @@index([timestamp])
+  @@map("transactions")
+}
+
+
+// Training Session Model
+model TrainingSession {
+  id             String @id @default(cuid())
+  agentId        String @map("agent_id")
+  trainerId      String? @map("trainer_id")
+  sessionType    String @map("session_type")
+  duration       Int? @map("duration") // Duration in minutes
+  feedbackScore  Float? @map("feedback_score")
+  improvements   String @map("improvements") // Comma-separated improvement areas
+  notes          String? @map("notes")
+  
+  // Timestamps
+  timestamp      DateTime @map("timestamp")
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  agent          Agent @relation("AgentTrainingSessions", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@index([agentId])
+  @@index([trainerId])
+  @@index([timestamp])
+  @@map("training_sessions")
+}
+
+// Mention Model - Track social mentions
+model Mention {
+  id        String @id @default(cuid())
+  agentId   String @map("agent_id")
+  platform  String @map("platform")
+  author    String @map("author")
+  content   String @map("content")
+  url       String? @map("url")
+  sentiment String? @map("sentiment") // positive, negative, neutral
+  reach     Int? @map("reach") // Follower count or reach metrics
+  
+  // Timestamps
+  timestamp DateTime @map("timestamp")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  agent     Agent @relation("AgentMentions", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@index([agentId])
+  @@index([platform])
+  @@index([timestamp])
+  @@map("mentions")
+}
+
+// Collaboration Model
+model Collaboration {
+  id              String @id @default(cuid())
+  agentId         String @map("agent_id")
+  partnerAgentId  String @map("partner_agent_id")
+  type            String @map("type") // Type of collaboration
+  description     String? @map("description")
+  workId          String? @map("work_id") // Associated work if any
+  
+  // Timestamps
+  timestamp       DateTime @map("timestamp")
+  createdAt       DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  agent           Agent @relation("AgentCollaborations", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@index([agentId])
+  @@index([partnerAgentId])
+  @@index([timestamp])
+  @@map("collaborations")
+}
+
+// Quality Evaluation Model
+model QualityEvaluation {
+  id          String @id @default(cuid())
+  agentId     String @map("agent_id")
+  score       Float @map("score")
+  evaluatorId String? @map("evaluator_id")
+  notes       String? @map("notes")
+  
+  // Timestamps
+  timestamp   DateTime @map("timestamp")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relationships
+  agent       Agent @relation("AgentQualityEvaluations", fields: [agentId], references: [id], onDelete: Cascade)
+  
+  @@index([agentId])
+  @@index([evaluatorId])
+  @@index([timestamp])
+  @@map("quality_evaluations")
+}
+
+// Daily Metrics Model - For analytics and reporting
+model DailyMetrics {
+  id                  String @id @default(cuid())
+  agentId             String @map("agent_id")
+  date                String @map("date") // YYYY-MM-DD format
+  
+  // Daily counts
+  creationCount       Int @default(0) @map("creation_count")
+  saleCount           Int @default(0) @map("sale_count")
+  trainingCount       Int @default(0) @map("training_count")
+  mentionCount        Int @default(0) @map("mention_count")
+  collaborationCount  Int @default(0) @map("collaboration_count")
+  
+  // Revenue tracking
+  revenue             Float @default(0) @map("revenue")
+  
+  // Timestamps
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  @@unique([agentId, date])
+  @@index([agentId])
+  @@index([date])
+  @@map("daily_metrics")
+}
+
+// Agent Metrics Model - For performance tracking
+model AgentMetrics {
+  id             String @id @default(cuid())
+  agentId        String @map("agent_id")
+  date           String @map("date") // YYYY-MM-DD format
+  
+  // Performance metrics
+  qualityScore   Float? @map("quality_score")
+  engagementRate Float? @map("engagement_rate")
+  responseTime   Float? @map("response_time")
+  
+  // Timestamps
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  @@unique([agentId, date])
+  @@index([agentId])
+  @@index([date])
+  @@map("agent_metrics")
+}

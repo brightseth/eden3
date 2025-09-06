@@ -1,0 +1,63 @@
+{
+  "exportDate": "2025-09-05T18:16:42.127Z",
+  "sourceDatabase": "sqlite",
+  "targetDatabase": "postgresql",
+  "tables": [
+    {
+      "table": "agents",
+      "count": 10,
+      "filePath": "/Users/seth/eden3/data-export/agents.json"
+    },
+    {
+      "table": "agent_kpis",
+      "count": 10,
+      "filePath": "/Users/seth/eden3/data-export/agent_kpis.json"
+    },
+    {
+      "table": "events",
+      "count": 28,
+      "filePath": "/Users/seth/eden3/data-export/events.json"
+    },
+    {
+      "table": "works",
+      "count": 34,
+      "filePath": "/Users/seth/eden3/data-export/works.json"
+    },
+    {
+      "table": "training_sessions",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/training_sessions.json"
+    },
+    {
+      "table": "mentions",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/mentions.json"
+    },
+    {
+      "table": "collaborations",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/collaborations.json"
+    },
+    {
+      "table": "quality_evaluations",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/quality_evaluations.json"
+    },
+    {
+      "table": "daily_metrics",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/daily_metrics.json"
+    },
+    {
+      "table": "agent_metrics",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/agent_metrics.json"
+    },
+    {
+      "table": "transactions",
+      "count": 0,
+      "filePath": "/Users/seth/eden3/data-export/transactions.json"
+    }
+  ],
+  "totalRecords": 82
+}
